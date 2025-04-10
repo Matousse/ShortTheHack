@@ -1,0 +1,11 @@
+# Protéger les fichiers sensibles
+<Files ~ "^\.(htaccess|env)$">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Protéger les dossiers de configuration
+<FilesMatch "^(\.env|\.git|\.gitignore|\.htaccess)">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
