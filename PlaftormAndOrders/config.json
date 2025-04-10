@@ -1,0 +1,7 @@
+{
+    "trading_enabled": true,
+    "target_account": "DamienMATHIS4",
+    "target_coin": "USDC",
+    "leverage": 1,
+    "check_interval": 10
+}

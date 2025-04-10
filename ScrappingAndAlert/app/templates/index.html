@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GentleMate - Bot de Trading Automatique</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 d-md-block bg-dark sidebar collapse">
+                <div class="position-sticky pt-3">
+                    <div class="text-center mb-4">
+                        <h3 class="text-white">GentleMate</h3>
+                        <p class="text-light">Bot de Trading Automatique</p>
+                    </div>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#dashboard">
+                                <i class="bi bi-speedometer2 me-2"></i>
+                                Tableau de bord
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#settings">
+                                <i class="bi bi-gear me-2"></i>
+                                Paramètres
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#logs">
+                                <i class="bi bi-file-text me-2"></i>
+                                Logs
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">Tableau de bord</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button id="startBot" type="button" class="btn btn-sm btn-success">
+                                <i class="bi bi-play-fill"></i> Démarrer
+                            </button>
+                            <button id="stopBot" type="button" class="btn btn-sm btn-danger" disabled>
+                                <i class="bi bi-stop-fill"></i> Arrêter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dashboard Section -->
+                <section id="dashboard" class="mb-5">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">État du Bot</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div id="statusIndicator" class="status-indicator bg-danger me-2"></div>
+                                        <span id="statusText">Arrêté</span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <strong>Compte Twitter cible:</strong> <span id="targetAccount">@{{ settings.target_account }}</span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <strong>Coin cible:</strong> <span id="targetCoin">{{ settings.target_coin }}</span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <strong>Levier:</strong> <span id="leverage">{{ settings.leverage }}x</span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <strong>Trading activé:</strong> <span id="tradingEnabled">{{ 'Oui' if settings.trading_enabled else 'Non' }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">Dernier Tweet</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="lastTweetContainer">
+                                        <p id="noTweetMessage" class="text-muted">Aucun tweet récupéré pour le moment.</p>
+                                        <div id="tweetContent" class="d-none">
+                                            <p id="tweetText" class="mb-2"></p>
+                                            <small id="tweetDate" class="text-muted"></small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">Connexions API</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="api-status-card mb-3">
+                                                <h6>Twitter API</h6>
+                                                <div class="d-flex align-items-center">
+                                                    <div id="twitterApiStatus" class="status-indicator bg-secondary me-2"></div>
+                                                    <span id="twitterApiStatusText">Non testé</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="api-status-card mb-3">
+                                                <h6>Claude API</h6>
+                                                <div class="d-flex align-items-center">
+                                                    <div id="claudeApiStatus" class="status-indicator bg-secondary me-2"></div>
+                                                    <span id="claudeApiStatusText">Non testé</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="api-status-card mb-3">
+                                                <h6>Binance API</h6>
+                                                <div class="d-flex align-items-center">
+                                                    <div id="binanceApiStatus" class="status-indicator bg-secondary me-2"></div>
+                                                    <span id="binanceApiStatusText">Non testé</span>
+                                                </div>
+                                                <button id="testBinanceBtn" class="btn btn-sm btn-outline-primary mt-2">Tester la connexion</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Settings Section -->
+                <section id="settings" class="d-none mb-5">
+                    <h2 class="mb-4">Paramètres</h2>
+                    <div class="card">
+                        <div class="card-body">
+                            <form id="settingsForm">
+                                <div class="mb-3 form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="tradingEnabledSwitch" {% if settings.trading_enabled %}checked{% endif %}>
+                                    <label class="form-check-label" for="tradingEnabledSwitch">Activer le trading automatique</label>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="targetAccountInput" class="form-label">Compte Twitter cible</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">@</span>
+                                        <input type="text" class="form-control" id="targetAccountInput" value="{{ settings.target_account }}">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="targetCoinInput" class="form-label">Coin cible</label>
+                                    <input type="text" class="form-control" id="targetCoinInput" value="{{ settings.target_coin }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="leverageInput" class="form-label">Levier (1-20x)</label>
+                                    <input type="range" class="form-range" min="1" max="20" step="1" id="leverageInput" value="{{ settings.leverage }}">
+                                    <div class="d-flex justify-content-between">
+                                        <span>1x</span>
+                                        <span id="leverageValue">{{ settings.leverage }}x</span>
+                                        <span>20x</span>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="checkIntervalInput" class="form-label">Intervalle de vérification (secondes)</label>
+                                    <input type="number" class="form-control" id="checkIntervalInput" min="1" value="{{ settings.check_interval }}">
+                                </div>
+                                <button type="submit" class="btn btn-primary">Enregistrer</button>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Logs Section -->
+                <section id="logs" class="d-none mb-5">
+                    <h2 class="mb-4">Logs</h2>
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="logs-container">
+                                <pre id="logsContent" class="logs-content">Chargement des logs...</pre>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

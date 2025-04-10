@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShortTheHack - Automated Trading Bot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 d-md-block bg-dark sidebar collapse">
+                <div class="position-sticky pt-3">
+                    <div class="text-center mb-4">
+                        <h3 class="text-white">ShortTheHack</h3>
+                        <p class="text-light">Automated Trading Bot</p>
+                    </div>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/">
+                                <i class="bi bi-speedometer2 me-2"></i>
+                                Short the hacks
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/sell-hacks">
+                                <i class="bi bi-graph-down me-2"></i>
+                                Sell the hacks
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/quick-escape">
+                                <i class="bi bi-door-open me-2"></i>
+                                Quick escape
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/settings">
+                                <i class="bi bi-gear me-2"></i>
+                                Settings
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/logs">
+                                <i class="bi bi-journal-text me-2"></i>
+                                Logs
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">Short the hacks</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button id="startBot" type="button" class="btn btn-sm btn-success">
+                                <i class="bi bi-play-fill"></i> Start
+                            </button>
+                            <button id="stopBot" type="button" class="btn btn-sm btn-danger" disabled>
+                                <i class="bi bi-stop-fill"></i> Stop
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dashboard Section -->
+                <section id="dashboard" class="mb-5">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">Bot Status</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div id="statusIndicator" class="status-indicator bg-danger me-2"></div>
+                                        <span id="statusText">Stopped</span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <strong>Target Twitter account:</strong> <span id="targetAccount">@{{ settings.target_account }}</span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <strong>Target coin:</strong> <span id="targetCoin">{{ settings.target_coin }}</span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <strong>Leverage:</strong> <span id="leverage">{{ settings.leverage }}x</span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <strong>Trading enabled:</strong> <span id="tradingEnabled">{{ 'Yes' if settings.trading_enabled else 'No' }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">Latest Tweet</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="lastTweetContainer">
+                                        <p id="noTweetMessage" class="text-muted">No tweets retrieved yet.</p>
+                                        <div id="tweetContent" class="d-none">
+                                            <p id="tweetText" class="mb-2"></p>
+                                            <small id="tweetDate" class="text-muted"></small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Active Shorts Section -->
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">Active Shorts</h5>
+                        </div>
+                        <div class="card-body">
+                            <p id="noShortsMessage" class="text-muted">No active shorts at the moment.</p>
+                            <div id="shortsListContainer" class="d-none">
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Symbol</th>
+                                                <th>Quantity</th>
+                                                <th>Entry Price</th>
+                                                <th>Leverage</th>
+                                                <th>Timestamp</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="shortsList">
+                                            <!-- Short positions will be added here dynamically -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">API Connections</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="api-status-card mb-3">
+                                                <h6>Twitter API</h6>
+                                                <div class="d-flex align-items-center">
+                                                    <div id="twitterApiStatus" class="status-indicator bg-secondary me-2"></div>
+                                                    <span id="twitterApiStatusText">Not tested</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="api-status-card mb-3">
+                                                <h6>Claude API</h6>
+                                                <div class="d-flex align-items-center">
+                                                    <div id="claudeApiStatus" class="status-indicator bg-secondary me-2"></div>
+                                                    <span id="claudeApiStatusText">Not tested</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="api-status-card mb-3">
+                                                <h6>Binance API</h6>
+                                                <div class="d-flex align-items-center">
+                                                    <div id="binanceApiStatus" class="status-indicator bg-secondary me-2"></div>
+                                                    <span id="binanceApiStatusText">Not tested</span>
+                                                </div>
+                                                <button id="testBinanceBtn" class="btn btn-sm btn-outline-primary mt-2">Test Connection</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/fixed.js') }}"></script>
+</body>
+</html>
