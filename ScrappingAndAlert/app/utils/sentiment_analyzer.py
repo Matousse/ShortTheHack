@@ -1,5 +1,5 @@
 """
-Module pour analyser le sentiment des tweets à l'aide de l'API Claude
+Module for analyzing tweet sentiment using the Claude API
 """
 import os
 import json
@@ -7,98 +7,98 @@ from anthropic import Anthropic
 from loguru import logger
 
 class SentimentAnalyzer:
-    """Classe pour analyser le sentiment des tweets à l'aide de l'API Claude"""
+    """Class for analyzing tweet sentiment using the Claude API"""
     
     def __init__(self, api_key=None):
-        """Initialise l'analyseur de sentiment"""
+        """Initialize the sentiment analyzer"""
         self.api_key = api_key or os.getenv("CLAUDE_API_KEY")
         if not self.api_key:
-            logger.warning("Clé API Claude non trouvée dans les variables d'environnement")
+            logger.warning("Claude API key not found in environment variables")
         
         self.client = self._init_client()
     
     def _init_client(self):
-        """Initialise le client Claude"""
+        """Initialize the Claude client"""
         try:
             client = Anthropic(api_key=self.api_key)
-            logger.info("Client Claude initialisé avec succès")
+            logger.info("Claude client successfully initialized")
             return client
         except Exception as e:
-            logger.error(f"Erreur lors de l'initialisation du client Claude: {str(e)}")
+            logger.error(f"Error initializing Claude client: {str(e)}")
             return None
     
     def is_hack_event(self, text):
         """
-        Détermine si un texte contient des informations sur un événement de hack
+        Determines if a text contains information about a hack event
         
         Args:
-            text (str): Le texte à analyser
+            text (str): The text to analyze
             
         Returns:
-            bool: True si le texte contient des informations sur un hack, False sinon
+            bool: True if the text contains information about a hack, False otherwise
         """
         try:
             if not self.client:
-                logger.error("Client Claude non initialisé")
+                logger.error("Claude client not initialized")
                 return False
             
-            # Construire le prompt pour Claude
+            # Build the prompt for Claude
             prompt = f"""
-            Analyse le tweet suivant et détermine s'il contient le mot "hack" ET s'il suggère qu'un hack est survenu.
+            Analyze the following tweet and determine if it contains the word "hack" AND if it suggests that a hack has occurred.
             
             Tweet: "{text}"
             
-            Réponds uniquement par un JSON avec une clé "is_hack" qui contient un booléen (true/false).
-            Réponds true uniquement si le tweet contient le mot "hack" ET suggère qu'un hack a réellement eu lieu.
+            Respond only with a JSON with a key "is_hack" that contains a boolean (true/false).
+            Respond true only if the tweet contains the word "hack" AND suggests that a hack has actually occurred.
             """
             
-            # Appeler l'API Claude
+            # Call the Claude API
             response = self.client.messages.create(
                 model="claude-3-sonnet-20240229",
                 max_tokens=100,
                 temperature=0,
-                system="Tu es un assistant qui analyse des tweets pour détecter des événements de hack. Réponds uniquement par un JSON avec une clé 'is_hack' qui contient un booléen.",
+                system="You are an assistant that analyzes tweets to detect hack events. Respond only with a JSON with a key 'is_hack' that contains a boolean.",
                 messages=[
                     {"role": "user", "content": prompt}
                 ]
             )
             
-            # Extraire la réponse
+            # Extract the response
             content = response.content[0].text
             
-            # Essayer de parser la réponse JSON
+            # Try to parse the JSON response
             try:
                 result = json.loads(content)
                 is_hack = result.get("is_hack", False)
-                logger.info(f"Analyse du tweet: is_hack={is_hack}")
+                logger.info(f"Tweet analysis: is_hack={is_hack}")
                 return is_hack
             except json.JSONDecodeError:
-                # Si la réponse n'est pas un JSON valide, vérifier si elle contient "true"
-                logger.warning(f"Réponse Claude non JSON: {content}")
+                # If the response is not a valid JSON, check if it contains "true"
+                logger.warning(f"Non-JSON Claude response: {content}")
                 return "true" in content.lower()
             
         except Exception as e:
-            logger.error(f"Erreur lors de l'analyse du tweet: {str(e)}")
+            logger.error(f"Error analyzing tweet: {str(e)}")
             return False
     
     def test_connection(self):
-        """Teste la connexion à l'API Claude"""
+        """Test the connection to the Claude API"""
         try:
             if not self.client:
-                return False, "Client Claude non initialisé"
+                return False, "Claude client not initialized"
             
-            # Tester la connexion en envoyant une requête simple
+            # Test the connection by sending a simple request
             response = self.client.messages.create(
                 model="claude-3-sonnet-20240229",
                 max_tokens=10,
                 messages=[
-                    {"role": "user", "content": "Dis bonjour"}
+                    {"role": "user", "content": "Say hello"}
                 ]
             )
             
             if response and response.content:
-                return True, "Connexion à l'API Claude réussie"
+                return True, "Connection to Claude API successful"
             else:
-                return False, "Impossible de récupérer des données depuis l'API Claude"
+                return False, "Unable to retrieve data from Claude API"
         except Exception as e:
-            return False, f"Erreur lors du test de connexion à l'API Claude: {str(e)}"
+            return False, f"Error testing connection to Claude API: {str(e)}"

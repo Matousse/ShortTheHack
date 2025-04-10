@@ -1,50 +1,50 @@
 """
-Module pour récupérer les tweets d'un compte Twitter spécifique
+Module to retrieve tweets from a specific Twitter account
 """
 import os
 import tweepy
 from loguru import logger
 
 class TwitterScraper:
-    """Classe pour scraper les tweets d'un compte Twitter spécifique"""
+    """Class for scraping tweets from a specific Twitter account"""
     
     def __init__(self, target_account=None):
-        """Initialise le scraper Twitter"""
+        """Initialize the Twitter scraper"""
         self.bearer_token = os.getenv("TWITTER_BEARER_TOKEN")
         if not self.bearer_token:
-            logger.warning("Token d'authentification Twitter non trouvé dans les variables d'environnement")
+            logger.warning("Twitter authentication token not found in environment variables")
         
         self.target_account = target_account or os.getenv("TARGET_TWITTER_ACCOUNT", "DamienMATHIS4")
         self.client = self._init_client()
     
     def _init_client(self):
-        """Initialise le client Twitter"""
+        """Initialize the Twitter client"""
         try:
             client = tweepy.Client(bearer_token=self.bearer_token)
-            logger.info("Client Twitter initialisé avec succès")
+            logger.info("Twitter client successfully initialized")
             return client
         except Exception as e:
-            logger.error(f"Erreur lors de l'initialisation du client Twitter: {str(e)}")
+            logger.error(f"Error initializing Twitter client: {str(e)}")
             return None
     
     def get_latest_tweet(self, username=None):
-        """Récupère le dernier tweet d'un compte Twitter"""
+        """Retrieve the latest tweet from a Twitter account"""
         target = username or self.target_account
         
         try:
             if not self.client:
-                logger.error("Client Twitter non initialisé")
+                logger.error("Twitter client not initialized")
                 return None
             
-            # Récupérer les informations de l'utilisateur
+            # Get user information
             user = self.client.get_user(username=target)
             if not user or not user.data:
-                logger.error(f"Utilisateur Twitter {target} non trouvé")
+                logger.error(f"Twitter user {target} not found")
                 return None
             
             user_id = user.data.id
             
-            # Récupérer les tweets de l'utilisateur (max 10, on prendra le premier)
+            # Get user tweets (max 10, we'll take the first one)
             tweets = self.client.get_users_tweets(
                 id=user_id,
                 max_results=10,
@@ -52,13 +52,13 @@ class TwitterScraper:
             )
             
             if not tweets or not tweets.data:
-                logger.warning(f"Aucun tweet trouvé pour l'utilisateur {target}")
+                logger.warning(f"No tweets found for user {target}")
                 return None
             
-            # Prendre le tweet le plus récent
+            # Take the most recent tweet
             latest_tweet = tweets.data[0]
             
-            # Formater les données du tweet
+            # Format tweet data
             tweet_data = {
                 "id": latest_tweet.id,
                 "text": latest_tweet.text,
@@ -66,24 +66,24 @@ class TwitterScraper:
                 "metrics": latest_tweet.public_metrics if hasattr(latest_tweet, "public_metrics") else {}
             }
             
-            logger.info(f"Tweet récupéré pour {target}: {tweet_data['text'][:50]}...")
+            logger.info(f"Tweet retrieved for {target}: {tweet_data['text'][:50]}...")
             return tweet_data
             
         except Exception as e:
-            logger.error(f"Erreur lors de la récupération du tweet pour {target}: {str(e)}")
+            logger.error(f"Error retrieving tweet for {target}: {str(e)}")
             return None
     
     def test_connection(self):
-        """Teste la connexion à l'API Twitter"""
+        """Test the connection to the Twitter API"""
         try:
             if not self.client:
-                return False, "Client Twitter non initialisé"
+                return False, "Twitter client not initialized"
             
-            # Tester la connexion en récupérant un utilisateur aléatoire (Twitter)
+            # Test the connection by retrieving a random user (Twitter)
             user = self.client.get_user(username="Twitter")
             if user and user.data:
-                return True, "Connexion à l'API Twitter réussie"
+                return True, "Connection to Twitter API successful"
             else:
-                return False, "Impossible de récupérer des données depuis l'API Twitter"
+                return False, "Unable to retrieve data from Twitter API"
         except Exception as e:
-            return False, f"Erreur lors du test de connexion à l'API Twitter: {str(e)}"
+            return False, f"Error testing connection to Twitter API: {str(e)}"

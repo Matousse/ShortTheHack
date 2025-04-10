@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ShortTheHack - Bot de trading automatique basé sur l'analyse de tweets
+ShortTheHack - Automated trading bot based on tweet analysis
 """
 import os
 import sys
@@ -16,12 +16,12 @@ from loguru import logger
 from app.utils.binance_trader import BinanceTrader
 from app.utils.config_manager import ConfigManager
 
-# Charger les variables d'environnement
+# Load environment variables
 load_dotenv()
 
-# Configuration du logger
+# Logger configuration
 logger.remove()
-# Logger pour le fichier
+# Logger for file
 logger.add(
     "logs/gentlemate_{time}.log",
     rotation="1 day",
@@ -29,7 +29,7 @@ logger.add(
     level="DEBUG",
     format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}"
 )
-# Logger pour la console (terminal)
+# Logger for console (terminal)
 logger.add(
     sys.stdout,
     level="DEBUG",
@@ -37,15 +37,15 @@ logger.add(
     colorize=True
 )
 
-# Initialiser l'application Flask
+# Initialize Flask application
 app = Flask(__name__, template_folder="app/templates", static_folder="app/static")
 
 # Protection des fichiers sensibles
 def protect_sensitive_files():
-    # Liste des fichiers sensibles à protéger
+    # List of sensitive files to protect
     sensitive_files = ['.env', '.git', '.gitignore', 'config.json']
     
-    # Vérifier si la requête tente d'accéder à un fichier sensible
+    # Check if the request is trying to access a sensitive file
     path = request.path
     for file in sensitive_files:
         if file in path:
@@ -53,31 +53,31 @@ def protect_sensitive_files():
             return jsonify({"error": "Access denied"}), 403
     return None
 
-# Enregistrer le middleware pour toutes les requêtes
+# Register middleware for all requests
 @app.before_request
 def before_request():
-    # Protection des fichiers sensibles
+    # Protection of sensitive files
     protection_result = protect_sensitive_files()
     if protection_result:
         return protection_result
 
-# Initialiser le gestionnaire de configuration
+# Initialize configuration manager
 config_manager = ConfigManager()
 
-# Initialiser les composants principaux
+# Initialize main components
 binance_trader = None
 
-# Variables globales
+# Global variables
 last_alert = None
 last_alert_time = None
 last_tweet = None
 last_tweet_time = None
 bot_running = False
-active_shorts = []  # Liste des shorts actifs
+active_shorts = []  # List of active shorts
 
 
 def initialize_components():
-    """Initialise les composants principaux de l'application"""
+    """Initialize the main components of the application"""
     global binance_trader, active_shorts
     
     try:
@@ -87,7 +87,7 @@ def initialize_components():
         )
         logger.info("Binance Trader component successfully initialized")
         
-        # Récupérer les positions shorts actives
+        # Retrieve active short positions
         try:
             existing_shorts = binance_trader.get_active_shorts()
             if existing_shorts:
@@ -103,44 +103,44 @@ def initialize_components():
 
 
 def process_alert(alert_value, tweet_text=None):
-    """Traite une alerte reçue du script externe"""
+    """Process an alert received from the external script"""
     global last_alert, last_alert_time, last_tweet, last_tweet_time
     
     logger.info(f"===== ALERT PROCESSING START =====")
     logger.info(f"Alert value: {alert_value}")
     logger.info(f"Tweet: {tweet_text}")
     
-    # Enregistrer l'alerte
+    # Record the alert
     last_alert = alert_value
     last_alert_time = datetime.now().isoformat()
     
-    # Enregistrer le tweet s'il est fourni
+    # Record the tweet if provided
     if tweet_text:
         last_tweet = tweet_text
         last_tweet_time = datetime.now().isoformat()
         logger.info(f"Tweet recorded: {tweet_text}")
     
-    # Si l'alerte est "1" et que le bot est en cours d'exécution, placer un ordre de short
+    # If the alert is "1" and the bot is running, place a short order
     if alert_value == "1":
         logger.warning("ALERT: Hack event detected!")
         logger.info(f"Alert details: {alert_value}, Tweet: {tweet_text}")
         
-        # Vérifier si le bot est en cours d'exécution
+        # Check if the bot is running
         logger.info(f"Bot status: {'Running' if bot_running else 'Stopped'}")
         if not bot_running:
             logger.warning("The bot is not running. No order has been placed.")
             return True
         
-        # Récupérer les paramètres actuels
+        # Get current parameters
         settings = config_manager.get_settings()
         leverage = settings.get("leverage", 1)
         
-        # Vérifier si le trading automatique est activé
+        # Check if automated trading is enabled
         if not settings.get("trading_enabled", False):
             logger.warning("Automated trading disabled. No short will be placed.")
             return True
             
-        # Exécuter l'ordre de short sur BTC
+        # Execute short order on BTC
         logger.info(f"Trading enabled: {settings.get('trading_enabled', True)}")
         if not binance_trader:
             logger.info("Binance Trader not initialized, attempting initialization")
@@ -149,7 +149,7 @@ def process_alert(alert_value, tweet_text=None):
                 return False
             logger.info("Binance Trader successfully initialized")
             
-        # Utiliser BTC/USDC pour le margin trading
+        # Use BTC/USDC for margin trading
         symbol = "BTCUSDC"
         logger.info(f"===== PLACING A SHORT =====")
         logger.info(f"Symbol: {symbol}")
@@ -179,9 +179,9 @@ def process_alert(alert_value, tweet_text=None):
             }
             active_shorts.append(short_info)
             
-            logger.success(f"Ordre de short placé avec succès pour {symbol} avec un levier de {leverage}x (ID: {order_id})")
-            logger.debug(f"Short ajouté à la liste des shorts actifs: {short_info}")
-            logger.debug(f"Nombre total de shorts actifs: {len(active_shorts)}")
+            logger.success(f"Short order successfully placed for {symbol} with leverage of {leverage}x (ID: {order_id})")
+            logger.debug(f"Short added to the list of active shorts: {short_info}")
+            logger.debug(f"Total number of active shorts: {len(active_shorts)}")
             return True
         else:
             logger.error(f"Failed to place short order for {symbol}")
@@ -515,7 +515,7 @@ def cancel_short():
 
 
 if __name__ == "__main__":
-    # Créer le dossier de logs s'il n'existe pas
+    # Create logs directory if it doesn't exist
     Path("logs").mkdir(exist_ok=True)
     
     # Importer le module time pour la méthode get_active_shorts

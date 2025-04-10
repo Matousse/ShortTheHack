@@ -1,5 +1,5 @@
 """
-Module de gestion de la configuration de l'application
+Application configuration management module
 """
 import os
 import json
@@ -7,10 +7,10 @@ from pathlib import Path
 from loguru import logger
 
 class ConfigManager:
-    """Gestionnaire de configuration pour l'application GentleMate"""
+    """Configuration manager for the GentleMate application"""
     
     def __init__(self, config_file="config.json"):
-        """Initialise le gestionnaire de configuration"""
+        """Initialize the configuration manager"""
         self.config_file = config_file
         self.default_settings = {
             "trading_enabled": False,
@@ -22,39 +22,39 @@ class ConfigManager:
         self.settings = self._load_settings()
     
     def _load_settings(self):
-        """Charge les paramètres depuis le fichier de configuration"""
+        """Load settings from the configuration file"""
         try:
             if Path(self.config_file).exists():
                 with open(self.config_file, "r") as f:
                     settings = json.load(f)
-                logger.info(f"Paramètres chargés depuis {self.config_file}")
+                logger.info(f"Settings loaded from {self.config_file}")
                 return settings
             else:
-                logger.info(f"Fichier de configuration {self.config_file} non trouvé, utilisation des paramètres par défaut")
+                logger.info(f"Configuration file {self.config_file} not found, using default settings")
                 self._save_settings(self.default_settings)
                 return self.default_settings
         except Exception as e:
-            logger.error(f"Erreur lors du chargement des paramètres: {str(e)}")
+            logger.error(f"Error loading settings: {str(e)}")
             return self.default_settings
     
     def _save_settings(self, settings):
-        """Sauvegarde les paramètres dans le fichier de configuration"""
+        """Save settings to the configuration file"""
         try:
             with open(self.config_file, "w") as f:
                 json.dump(settings, f, indent=4)
-            logger.info(f"Paramètres sauvegardés dans {self.config_file}")
+            logger.info(f"Settings saved to {self.config_file}")
             return True
         except Exception as e:
-            logger.error(f"Erreur lors de la sauvegarde des paramètres: {str(e)}")
+            logger.error(f"Error saving settings: {str(e)}")
             return False
     
     def get_settings(self):
-        """Retourne les paramètres actuels"""
+        """Return the current settings"""
         return self.settings
     
     def update_settings(self, new_settings):
-        """Met à jour les paramètres"""
+        """Update the settings"""
         self.settings.update(new_settings)
         self._save_settings(self.settings)
-        logger.info(f"Paramètres mis à jour: {new_settings}")
+        logger.info(f"Settings updated: {new_settings}")
         return self.settings

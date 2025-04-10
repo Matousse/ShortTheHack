@@ -1,5 +1,5 @@
 """
-Module pour interagir avec l'API Binance et placer des ordres de trading
+Module for interacting with the Binance API and placing trading orders
 """
 import os
 from binance.client import Client
@@ -7,51 +7,51 @@ from binance.exceptions import BinanceAPIException
 from loguru import logger
 
 class BinanceTrader:
-    """Classe pour interagir avec l'API Binance et placer des ordres de trading"""
+    """Class for interacting with the Binance API and placing trading orders"""
     
     def __init__(self, api_key=None, api_secret=None):
-        """Initialise le trader Binance"""
+        """Initialize the Binance trader"""
         self.api_key = api_key or os.getenv("BINANCE_API_KEY")
         self.api_secret = api_secret or os.getenv("BINANCE_API_SECRET")
         
         if not self.api_key or not self.api_secret:
-            logger.warning("Clés API Binance non trouvées dans les variables d'environnement")
+            logger.warning("Binance API keys not found in environment variables")
         
         self.client = self._init_client()
     
     def _init_client(self):
-        """Initialise le client Binance"""
+        """Initialize the Binance client"""
         try:
             client = Client(self.api_key, self.api_secret)
-            logger.info("Client Binance initialisé avec succès")
+            logger.info("Binance client successfully initialized")
             return client
         except Exception as e:
-            logger.error(f"Erreur lors de l'initialisation du client Binance: {str(e)}")
+            logger.error(f"Error initializing Binance client: {str(e)}")
             return None
     
     def test_connection(self):
-        """Teste la connexion à l'API Binance"""
+        """Test the connection to the Binance API"""
         try:
             if not self.client:
-                return False, "Client Binance non initialisé"
+                return False, "Binance client not initialized"
             
-            # Tester la connexion en récupérant le statut du système
+            # Test the connection by retrieving the system status
             status = self.client.get_system_status()
             
             if status and status.get("status") == 0:
-                # Vérifier également l'accès au compte futures
+                # Also check access to futures account
                 try:
                     self.client.futures_account_balance()
-                    return True, "Connexion à l'API Binance réussie (spot et futures)"
+                    return True, "Connection to Binance API successful (spot and futures)"
                 except BinanceAPIException as e:
-                    return False, f"Connexion au compte spot réussie, mais erreur avec le compte futures: {str(e)}"
+                    return False, f"Connection to spot account successful, but error with futures account: {str(e)}"
             else:
-                return False, f"Système Binance indisponible: {status}"
+                return False, f"Binance system unavailable: {status}"
         except Exception as e:
-            return False, f"Erreur lors du test de connexion à l'API Binance: {str(e)}"
+            return False, f"Error testing connection to Binance API: {str(e)}"
     
     def get_futures_balance(self):
-        """Récupère le solde du compte futures"""
+        """Retrieve the futures account balance"""
         try:
             if not self.client:
                 logger.error("Client Binance non initialisé")
@@ -59,42 +59,42 @@ class BinanceTrader:
             
             balances = self.client.futures_account_balance()
             
-            # Filtrer pour obtenir le solde USDT
+            # Filter to get USDT balance
             usdt_balance = next((b for b in balances if b["asset"] == "USDT"), None)
             
             if usdt_balance:
                 available_balance = float(usdt_balance["withdrawAvailable"])
-                logger.info(f"Solde futures disponible: {available_balance} USDT")
+                logger.info(f"Available futures balance: {available_balance} USDT")
                 return available_balance
             else:
-                logger.warning("Aucun solde USDT trouvé dans le compte futures")
+                logger.warning("No USDT balance found in futures account")
                 return 0
         except Exception as e:
-            logger.error(f"Erreur lors de la récupération du solde futures: {str(e)}")
+            logger.error(f"Error retrieving futures balance: {str(e)}")
             return None
     
     def set_leverage(self, symbol, leverage):
-        """Définit le levier pour un symbole donné"""
+        """Set the leverage for a given symbol"""
         try:
             if not self.client:
                 logger.error("Client Binance non initialisé")
                 return False
             
-            # Limiter le levier à 20x (maximum généralement autorisé sur Binance)
+            # Limit leverage to 20x (maximum generally allowed on Binance)
             leverage = min(leverage, 20)
             
             # Définir le levier
             response = self.client.futures_change_leverage(symbol=symbol, leverage=leverage)
             
-            logger.info(f"Levier défini pour {symbol}: {leverage}x")
+            logger.info(f"Leverage set for {symbol}: {leverage}x")
             return True
         except Exception as e:
-            logger.error(f"Erreur lors de la définition du levier pour {symbol}: {str(e)}")
+            logger.error(f"Error setting leverage for {symbol}: {str(e)}")
             return False
     
     def set_margin_type(self, symbol, margin_type="CROSSED"):
         """
-        Définit le type de marge pour un symbole donné (CROSSED pour Cross Margin, ISOLATED pour Isolated Margin)
+        Set the margin type for a given symbol (CROSSED for Cross Margin, ISOLATED for Isolated Margin)
         """
         try:
             if not self.client:
@@ -104,80 +104,80 @@ class BinanceTrader:
             # Définir le type de marge
             try:
                 response = self.client.futures_change_margin_type(symbol=symbol, marginType=margin_type)
-                logger.info(f"Type de marge défini pour {symbol}: {margin_type}")
+                logger.info(f"Margin type set for {symbol}: {margin_type}")
                 return True
             except BinanceAPIException as e:
-                # Si l'erreur est que le type de marge est déjà défini, c'est OK
+                # If the error is that the margin type is already set, that's OK
                 if "Already" in str(e):
-                    logger.info(f"Le type de marge {margin_type} est déjà défini pour {symbol}")
+                    logger.info(f"Margin type {margin_type} is already set for {symbol}")
                     return True
                 else:
                     raise e
         except Exception as e:
-            logger.error(f"Erreur lors de la définition du type de marge pour {symbol}: {str(e)}")
+            logger.error(f"Error setting margin type for {symbol}: {str(e)}")
             return False
     
     def place_short_order(self, symbol, leverage=1):
         """
-        Place un ordre de vente à découvert (short) sur le marché futures
+        Place a short sell order on the futures market
         
         Args:
-            symbol (str): Le symbole à shorter (ex: "BTCUSDT")
-            leverage (int): Le levier à utiliser (1-20)
+            symbol (str): The symbol to short (e.g., "BTCUSDT")
+            leverage (int): The leverage to use (1-20)
             
         Returns:
-            bool: True si l'ordre a été placé avec succès, False sinon
+            bool: True if the order was successfully placed, False otherwise
         """
         try:
             if not self.client:
                 logger.error("Client Binance non initialisé")
                 return False
             
-            # Définir le type de marge à CROSSED (Cross Margin)
+            # Set margin type to CROSSED (Cross Margin)
             self.set_margin_type(symbol, "CROSSED")
             
             # Définir le levier
             self.set_leverage(symbol, leverage)
             
-            # Récupérer le solde disponible
+            # Get available balance
             available_balance = self.get_futures_balance()
             
             if not available_balance or available_balance <= 0:
-                logger.error("Solde futures insuffisant pour placer un ordre")
+                logger.error("Insufficient futures balance to place an order")
                 return False
             
-            # Récupérer le prix actuel du symbole
+            # Get current symbol price
             ticker = self.client.futures_symbol_ticker(symbol=symbol)
             current_price = float(ticker["price"])
             
-            # Calculer la quantité à shorter (en tenant compte du levier)
-            # Utiliser 95% du solde disponible pour éviter les erreurs de marge insuffisante
+            # Calculate quantity to short (taking leverage into account)
+            # Use 95% of available balance to avoid insufficient margin errors
             quantity = (available_balance * 0.95 * leverage) / current_price
             
-            # Arrondir la quantité à la précision appropriée
+            # Round the quantity to the appropriate precision
             exchange_info = self.client.futures_exchange_info()
             symbol_info = next((s for s in exchange_info["symbols"] if s["symbol"] == symbol), None)
             
             if not symbol_info:
-                logger.error(f"Symbole {symbol} non trouvé dans les informations de l'échange")
+                logger.error(f"Symbol {symbol} not found in exchange information")
                 return False
             
-            # Trouver la précision de la quantité
+            # Find the quantity precision
             quantity_precision = symbol_info["quantityPrecision"]
             quantity = round(quantity, quantity_precision)
             
-            # Placer l'ordre de vente à découvert
+            # Place the short sell order
             order = self.client.futures_create_order(
                 symbol=symbol,
-                side="SELL",  # SELL pour shorter
+                side="SELL",  # SELL for shorting
                 type="MARKET",
                 quantity=quantity
             )
             
-            logger.success(f"Ordre de short placé avec succès pour {symbol}: {quantity} à {current_price} USDT avec un levier de {leverage}x")
-            logger.info(f"Détails de l'ordre: {order}")
+            logger.success(f"Short order successfully placed for {symbol}: {quantity} at {current_price} USDT with leverage of {leverage}x")
+            logger.info(f"Order details: {order}")
             
             return True
         except Exception as e:
-            logger.error(f"Erreur lors du placement de l'ordre de short pour {symbol}: {str(e)}")
+            logger.error(f"Error placing short order for {symbol}: {str(e)}")
             return False
